@@ -199,6 +199,9 @@ else
 	echo "   5) Hurricane Electric"
 	read -p "DNS [1-6]: " -e -i 1 DNS
 	echo ""
+	NOLOG=n
+	read -p "Do you want to disable OpenVPN server logs? [y/N] " -e -i $NOLOG NOLOG
+	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
 	read -p "Client name: " -e -i client CLIENT
@@ -275,10 +278,18 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 	echo "keepalive 10 120
 comp-lzo
 persist-key
-persist-tun
-status openvpn-status.log
-verb 3
-crl-verify crl.pem" >> /etc/openvpn/server.conf
+persist-tun" >> /etc/openvpn/server.conf
+	# Logging
+	if [[ $NOLOG =~ ^[Yy]$ ]]
+	then
+		echo 'log /dev/null' >> /etc/openvpn/server.conf
+		echo 'status /dev/null' >> /etc/openvpn/server.conf
+		echo 'verb 0' >> /etc/openvpn/server.conf
+	else
+		echo 'status openvpn-status.log' >> /etc/openvpn/server.conf
+		echo 'verb 3' >> /etc/openvpn/server.conf
+	fi
+	echo 'crl-verify crl.pem' >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
 		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
